@@ -1,9 +1,13 @@
-PROTOCOL = "http"
-MASTER_IP = "localhost"
-MASTER_PORT = "4000"
+import requests
+
+
+PROTOCOL = 'http'
+MASTER_IP = 'localhost'
+MASTER_PORT = '4000'
+
 
 def requestURL(req):
-    return PROTOCOL + "://" + MASTER_IP + ":" + MASTER_PORT + "/api/" + req
+    return PROTOCOL + '://' + MASTER_IP + ':' + MASTER_PORT + '/api/' + req
 
 
 def printPossibleActions():
@@ -27,68 +31,104 @@ def printPossibleActions():
 
 
 def initializeFS():
-    # TODO File system initializing
-    return
+    response = requests.request('POST', url=requestURL('init'))
 
 
-def createFile():
+def createFile(cwd):
     filename = input('Specify name of new file to create: ')
-    # TODO Creating an empty file
+    data = { 'name': filename, 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('POST', url=requestURL('touch'), data=data, headers=headers)
 
 
-def downloadFile():
+def downloadFile(cwd):
     filename = input('Specify name of file to download: ')
-    # TODO File Downloading
+    data = { 'name': filename, 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('GET', url=requestURL('download'), data=data, headers=headers)
+    f = open(filename, 'w')
+    f.write(response.content)
+    f.close()
 
 
-def uploadFile():
+def uploadFile(cwd):
     filename = input('Specify name of file to upload: ')
-    # TODO File Uploading
+    files = { 'u_file': open(filename, 'rb') }
+    headers = { 'Content-Type': 'multi/form-data' }
+    response = requests.request('POST', url=requestURL('upload'), files=files, headers=headers)
 
 
-def deleteFile():
+def deleteFile(cwd):
     filename = input('Specify name of file to delete: ')
-    # TODO Deleting file
+    data = { 'name': filename, 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('DELETE', url=requestURL('file'), data=data, headers=headers)
 
 
-def getInfo():
+def getInfo(cwd):
     filename = input('Specify name of file to get info from: ')
-    # TODO Getting file info
+    data = { 'name': filename, 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('GET', url=requestURL('fileinfo'), data=data, headers=headers)
 
 
-def copyFile():
+def copyFile(cwd):
     filename = input('Specify name of file you want to copy: ')
-    # TODO Creating a file copy
+    data = { 'name': filename, 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('POST', url=requestURL('filecopy'), data=data, headers=headers)
 
 
-def moveFile():
+def moveFile(cwd):
     filename = input('Specify name of file to move: ')
     newLocation = input('Specify new file location: ')
-    # TODO Moving file to a new location
+    data = { 'name': filename, 'path': cwd, 'newPath': newLocation }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('POST', url=requestURL('filemove'), data=data, headers=headers)
 
 
-def changeDirectory():
-    dirName = input('Sprecify name of directory to move to: ')
-    # TODO cd
+def changeDirectory(cwd):
+    cwdBackup = cwd
+    dirName = input('Specify name of directory to move to: ')
+
+    for p in dirName.split('/'):
+        if p == '.':
+            continue
+        elif p == '..':
+            if (cwd == '/'):
+                print('Incorrect path')
+                return cwdBackup
+            cwd = cwd[:(cwd.rfind('/') - 1)]
+        else:
+            cwd = cwd + p + '/'
+
+    print('cwd = {0}'.format(cwd))
+    return cwd
 
 
-def showListOfFiles():
-    # TODO ls
-    return
+def showListOfFiles(cwd):
+    data = { 'path': cwd }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('GET', url=requestURL('ls'), data=data, headers=headers)
 
 
-def createDirectory():
+def createDirectory(cwd):
     dirName = input('Sprecify name of new directory: ')
-    # TODO mkdir
+    data = { 'path': (cwd + dirName + '/') }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('POST', url=requestURL('mkdir'), data=data, headers=headers)
 
 
-def deleteDirectory():
+def deleteDirectory(cwd):
     dirName = input('Sprecify name of directory to delete: ')
-    # TODO rm -rf
+    data = { 'path': (cwd + dirName + '/'), 'force': True }
+    headers = { 'Content-Type': 'application/json' }
+    response = requests.request('DELETE', url=requestURL('dir'), data=data, headers=headers)
 
 
 if __name__ == "__main__":
     answer = -1
+    cwd = '/'
 
     print('Welcome to CLI Application for DFS!')
     printPossibleActions()
@@ -113,7 +153,7 @@ if __name__ == "__main__":
         if answer == 8:
             moveFile()
         if answer == 9:
-            changeDirectory()
+            cwd = changeDirectory(cwd)
         if answer == 10:
             showListOfFiles()
         if answer == 11:
